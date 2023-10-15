@@ -1,19 +1,25 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
-	"getMP3/internal/cli"
 	"getMP3/internal/downloader/youtubeDL"
 	"getMP3/internal/downloader/ytDLP"
 	"getMP3/internal/processor"
+	"getMP3/internal/server"
+	"getMP3/internal/shutdown"
 	"getMP3/internal/uploader/tgBot"
 )
 
 func main() {
-	var err error
+	var (
+		ctx = context.Background()
+		err error
+	)
 	defer func() {
 		if err != nil {
 			fmt.Println(err)
@@ -36,6 +42,8 @@ func main() {
 		return
 	}
 
+	closer := shutdown.New(time.Second)
+
 	mp3Dir, found := os.LookupEnv("MP3_DIR")
 	if !found {
 		fmt.Println("MP3_DIR not found")
@@ -57,5 +65,13 @@ func main() {
 		},
 	)
 
-	cli.New(p).Run()
+	s := server.New(bot, p, bot)
+	closer.Add(s.Stop)
+
+	go func(ctx context.Context) {
+		closer.Wait(ctx)
+		closer.CloseAll()
+	}(ctx)
+
+	s.Run(ctx)
 }
