@@ -20,7 +20,9 @@ func New() *provider {
 }
 
 func (p *provider) Download(ctx context.Context, sourceURL, output string) error {
-	download := exec.CommandContext(ctx, "zsh", "-c", fmt.Sprintf("%s %s \"%s\" %s ", p.binPath, p.binOpts, output, sourceURL))
+	cmd := fmt.Sprintf("%s %s \"%s\" %s ", p.binPath, p.binOpts, output, sourceURL)
+	fmt.Println(cmd)
+	download := exec.CommandContext(ctx, "zsh", "-c", cmd)
 	download.Stdout = os.Stdout
 	download.Stderr = os.Stdin
 	return download.Run()
